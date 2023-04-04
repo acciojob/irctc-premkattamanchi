@@ -42,7 +42,7 @@ public class TrainService {
         return train.getTrainId();
     }
 
-    public Integer calculateAvailableSeats(SeatAvailabilityEntryDto seatAvailabilityEntryDto){
+    public Integer calculateAvailableSeats(SeatAvailabilityEntryDto seatAvailabilityEntryDto)throws Exception{
 
         //Calculate the total seats available
         //Suppose the route is A B C D
