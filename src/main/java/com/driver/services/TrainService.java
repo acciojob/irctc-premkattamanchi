@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -26,7 +27,19 @@ public class TrainService {
         //and route String logic to be taken from the Problem statement.
         //Save the train and return the trainId that is generated from the database.
         //Avoid using the lombok library
-        return null;
+        List<Station> stationList=trainEntryDto.getStationRoute();
+        StringBuilder sb=new StringBuilder();
+        for(int i=0;i<stationList.size()-1;i++){
+            sb.append(stationList.get(i));
+            sb.append(",");
+        }
+        sb.append(stationList.get(stationList.size()-1));
+        Train train=new Train();
+        train.setRoute(sb.toString());
+        train.setDepartureTime(trainEntryDto.getDepartureTime());
+        train.setNoOfSeats(trainEntryDto.getNoOfSeats());
+        trainRepository.save(train);
+        return train.getTrainId();
     }
 
     public Integer calculateAvailableSeats(SeatAvailabilityEntryDto seatAvailabilityEntryDto){
@@ -39,8 +52,26 @@ public class TrainService {
         //even if that seat is booked post the destStation or before the boardingStation
         //Inshort : a train has totalNo of seats and there are tickets from and to different locations
         //We need to find out the available seats between the given 2 stations.
-
-       return null;
+       Train train=trainRepository.findById(seatAvailabilityEntryDto.getTrainId()).get();
+       String stations[]=train.getRoute().split(",");
+       HashMap<String,Integer> routeMap=new HashMap<>();
+       int i=1;
+       for(String s:stations){
+           routeMap.put(s,i);
+           i++;
+       }
+       List<Ticket> bookedTickets=train.getBookedTickets();
+       int totalSeats=train.getNoOfSeats();
+       String fromStation=seatAvailabilityEntryDto.getFromStation().toString();
+       String toStation=seatAvailabilityEntryDto.getToStation().toString();
+       if(routeMap.containsKey(fromStation) && routeMap.containsKey(toStation) && routeMap.get(fromStation)< routeMap.get(toStation)){
+           for(Ticket ticket:bookedTickets){
+                   if(routeMap.get(fromStation)<=routeMap.get(ticket.getToStation().toString()) && routeMap.get(toStation)>=routeMap.get(ticket.getFromStation().toString())){
+                       totalSeats-=ticket.getPassengersList().size();
+                   }
+           }
+       }
+       return totalSeats;
     }
 
     public Integer calculatePeopleBoardingAtAStation(Integer trainId,Station station) throws Exception{
@@ -49,18 +80,41 @@ public class TrainService {
         //if the trainId is not passing through that station
         //throw new Exception("Train is not passing from this station");
         //  in a happy case we need to find out the number of such people.
-
-
-        return 0;
+        Train train=trainRepository.findById(trainId).get();
+        String stations[]=train.getRoute().split(",");
+        boolean isFound=false;
+        for(String s:stations){
+            if(s.equals(station.toString()))
+                isFound=true;
+        }
+        if(isFound==false)
+            throw new Exception("Train is not passing from this station");
+        //station is present
+        int ans=0;
+        List<Ticket> ticketList=train.getBookedTickets();
+        for(Ticket ticket:ticketList){
+            if(station.equals(ticket.getFromStation()))
+                ans+=ticket.getPassengersList().size();
+        }
+        return ans;
     }
 
-    public Integer calculateOldestPersonTravelling(Integer trainId){
+    public Integer calculateOldestPersonTravelling(Integer trainId) throws Exception{
 
         //Throughout the journey of the train between any 2 stations
         //We need to find out the age of the oldest person that is travelling the train
         //If there are no people travelling in that train you can return 0
-
-        return 0;
+        Train train=trainRepository.findById(trainId).get();
+        int age=0;
+        List<Ticket> ticketList=train.getBookedTickets();
+        for(Ticket ticket:ticketList){
+            List<Passenger> passengerList=ticket.getPassengersList();
+            for(Passenger passenger:passengerList){
+                if(passenger.getAge()>age)
+                    age= passenger.getAge();
+            }
+        }
+        return age;
     }
 
     public List<Integer> trainsBetweenAGivenTime(Station station, LocalTime startTime, LocalTime endTime){
@@ -70,8 +124,29 @@ public class TrainService {
         //You can assume that the date change doesn't need to be done ie the travel will certainly happen with the same date (More details
         //in problem statement)
         //You can also assume the seconds and milli seconds value will be 0 in a LocalTime format.
+        List<Integer> ans=new ArrayList<>();
+        List<Train> trainList=trainRepository.findAll();
+        int startTimeInMinutes= startTime.getHour()*60+startTime.getMinute();
+        int endTimeInMinutes=endTime.getHour()*60+endTime.getMinute();
+        for(Train train:trainList){
+            int hoursToReachStation=0;
+            String route=train.getRoute();
+            String stations[]=route.split(",");
+            if(route.contains(station.toString())){
+                for(int i=0;i<stations.length;i++){
+                    if(stations[i].equals(station.toString())) {
+                        hoursToReachStation=i;
+                        break;
+                    }
+                }
+            }
+            LocalTime departureTime=train.getDepartureTime();
+            int arrivalTimeInMin=departureTime.getHour()*60+departureTime.getMinute()+hoursToReachStation*60;
+            if(arrivalTimeInMin>=startTimeInMinutes && arrivalTimeInMin<=endTimeInMinutes)
+                ans.add(train.getTrainId());
 
-        return null;
+        }
+        return ans;
     }
 
 }

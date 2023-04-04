@@ -27,7 +27,6 @@ public class Passenger {
 
     public Passenger() {
     }
-
     @ManyToMany
     @JoinColumn
     private List<Ticket> bookedTickets;
