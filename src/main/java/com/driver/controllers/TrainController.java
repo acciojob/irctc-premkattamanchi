@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -65,9 +66,15 @@ public class TrainController {
 
     @GetMapping("get-list-of-trains-arriving-in-a-range-of-time")
     public List<Integer> calculateListOfTrainIdsAtAStationInAParticularTimeRange(@RequestParam("station")Station station,
-                                                                                 @RequestParam("startTime")LocalTime startTime
-                                                                                 ,@RequestParam("endTime")LocalTime endTime){
-
-        return trainService.trainsBetweenAGivenTime(station,startTime,endTime);
+                                                                                 @RequestParam("startTime")LocalTime startTime,
+                                                                                 @RequestParam("endTime")LocalTime endTime){
+        List<Integer> ans=new ArrayList<>();
+        try{
+            ans=trainService.trainsBetweenAGivenTime(station,startTime,endTime);
+            return ans;
+        }
+        catch(Exception e){
+            return ans;
+        }
     }
 }
